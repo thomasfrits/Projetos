@@ -6,36 +6,35 @@ using namespace std;
 
 
 int main(){
-
+    Loja mercadinho;
     int opcao;
     do{
 
-        opcao = Menu();
+        opcao = mercadinho.Menu();
 
         switch(opcao){
     
             case 0:
-                    // Saída do programa
+
                     cout << "Saindo..."<<endl;
+
                     break;
 
             case 1:
-                    /*  Percorre os produtos que possuem valor não vazio no campo do nome
-                        e exibe na tela */
 
-                    MostraProdutos();
+                    mercadinho.MostraProdutos();
 
                     break;
 
             case 2:
 
-                    InsereProduto();
+                    mercadinho.InsereProduto();
 
                     break;
 
             case 3:
 
-                    RemoveProduto();
+                    mercadinho.RemoveProduto();
 
         };
 

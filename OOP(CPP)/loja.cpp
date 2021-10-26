@@ -2,11 +2,11 @@
 #include <fstream>
 #include <string>
 #include <vector>
-# include "loja.h"
+#include "loja.h"
 using namespace std;
 
-int Menu(){
-        // Menu de selecao para a loja    
+int Loja::Menu(){
+// Mostra um menu de acoes para a loja    
         int opcao;
         cout << "0 - Sair"<<endl;
         cout << "1 - Verificar produtos cadastrados"<<endl;
@@ -16,31 +16,83 @@ int Menu(){
         return opcao;
 }
 
-int InsereProduto(){
-        //insere os valores informados na base
-        string nome_do_produto, preco_do_produto;
+int Loja::InsereProduto(){
+// Recebe os valores de nome e preço e insere os valores informados na base
+        
+        string nome_do_produto, preco_do_produto, campo1, campo2;
+        ofstream base_produtos;
+        ifstream arq1;
+        bool possui_produto_removido = false;
+        
         cout << "Digite o nome do produto: ";
         cin >> nome_do_produto;
         cout << "Digite o preco do produto: ";
         cin >> preco_do_produto;
 
-        ofstream base_produtos;
-        base_produtos.open("base_produtos.csv", ios_base::app);
-        base_produtos << nome_do_produto << "," << preco_do_produto << endl;
-        base_produtos.close();
+        arq1.open("base_produtos.csv");
+        while (!arq1.eof()){
+
+                getline(arq1, campo1, ',' );
+                if (campo1 == "Produto removido"){
+
+                        possui_produto_removido = true;
+                        base_produtos.close();
+                        break;
+                }
+                getline(arq1, campo2, '\n');
+        }
+        arq1.close();
         
+        if (possui_produto_removido){
+                
+                arq1.open("base_produtos.csv");
+                base_produtos.open("novo.csv");
+                
+                while (!arq1.eof()){
+
+                        getline(arq1, campo1, ',');
+                        getline(arq1, campo2, '\n');
+                        if (campo1 == "Produto removido"){
+                                
+                                base_produtos << nome_do_produto << "," << preco_do_produto << endl;
+                                break;
+                        }
+                        base_produtos << campo1 << "," << campo2 << endl;
+                }
+                while (!arq1.eof()){
+
+                        getline(arq1, campo1, ',');
+                        getline(arq1, campo2, '\n');
+                        
+                        if (campo1 == ""){
+                                
+                                break;
+                        }
+                        base_produtos << campo1 << "," << campo2 << endl;
+                }
+                
+                remove("base_produtos.csv");
+                rename("novo.csv", "base_produtos.csv");        
+        }
+        
+        else{
+                
+                base_produtos.open("base_produtos.csv", ios_base::app);
+                base_produtos << nome_do_produto << "," << preco_do_produto << endl;
+                base_produtos.close();
+        }
+                
         return 0;
 }
 
-int MostraProdutos(){
-
+int Loja::MostraProdutos(){
+// Exibe todos os produtos cadastrados na base
         int contador = 1;
+        string nome_do_produto, preco_do_produto;
 
         ifstream base_produtos;
         base_produtos.open("base_produtos.csv");
 
-        string nome_do_produto;
-        string preco_do_produto;
 
         while(getline(base_produtos, nome_do_produto, ',')){
 
@@ -57,16 +109,18 @@ int MostraProdutos(){
         return 0;
 
 }
-int RemoveProduto(){
 
+int Loja::RemoveProduto(){
+// Remove um produto com base no código especificado na funcao MostraProdutos
         int codigo;
+        string linha;
+
         cout << "Digite o código do produto a ser removido:";
         cin >> codigo;
 
-        string linha;
         ifstream arq1;
-        arq1.open("base_produtos.csv");
         ofstream arq2;
+        arq1.open("base_produtos.csv");
         arq2.open("novo.csv");
 
         for (int i = 1; i < codigo; i++){
@@ -76,8 +130,7 @@ int RemoveProduto(){
         }
 
         getline(arq1, linha, '\n' );
-        cout << "Produto removido com sucesso" << endl;
-        arq2 << "Produto removido,0" << endl;
+        arq2 << "Produto removido,0.00" << endl;
         
         while (!arq1.eof()){
 
@@ -89,6 +142,7 @@ int RemoveProduto(){
         }
         remove("base_produtos.csv");
         rename("novo.csv", "base_produtos.csv");
+        cout << "Produto removido com sucesso" << endl;
 
         return 0;
 }
