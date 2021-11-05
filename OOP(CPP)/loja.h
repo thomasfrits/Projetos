@@ -6,15 +6,12 @@ using namespace std;
 class Loja{
 
     private:
-    string base_produtos;
-    
+        int opcao;
+
     public:
-    int Menu();
-    int InsereProduto();
-    int MostraProdutos();
-    int RemoveProduto();
-
+        int MenuGerente();
+        int MenuVendedor();
+        int MenuAdm();
 };
-
 
 #endif //LOJA_H_INCLUDED
