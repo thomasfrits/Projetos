@@ -2,6 +2,8 @@
 #include <fstream>
 #include <string>
 #include <iomanip>
+#include <termios.h>
+#include <unistd.h>
 #include "funcionario.h"
 using namespace std;
 
@@ -12,14 +14,23 @@ int Funcionario::Login(){
 
     string campo1, campo2, campo3;
     bool credencial_nao_encontrada;
-    int retorno;
+    int retorno = 0;
 
     cout << "Digite seu nome: ";
-    cin >> nome;
+    cin >> this->nome;
+    
+    termios oldt;
+    tcgetattr(STDIN_FILENO, &oldt);
+    termios newt = oldt;
+    newt.c_lflag &= ~ECHO;
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
 
-    if (nome == nome_adm){
+    if (this->nome == nome_adm){//Login do adm
+        
         cout << "Digite sua senha: ";
         cin >> senha;
+
+        tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
         if (senha == senha_adm){
             retorno = 3;
         }
@@ -42,7 +53,7 @@ int Funcionario::Login(){
             }
             getline(base_logins, campo2, ',');
 
-            if (campo2 == nome){
+            if (campo2 == this->nome){
 
                 getline(base_logins, campo3, '\n');
                 break;
@@ -53,12 +64,15 @@ int Funcionario::Login(){
         if (credencial_nao_encontrada){
             retorno = 0;
             cout << "Credencial não encontrada" << endl;
+            tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 
         }
         else{
 
             cout << "Digite sua senha: ";
             cin >> senha;
+            tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+            
             if (campo3 == senha){
                 
                 if (campo1 == "Gerente"){
@@ -80,10 +94,47 @@ int Funcionario::Login(){
     return retorno;
 }
 
-int Gerente::MostraProdutos(){
+int Funcionario::MenuGerente(){
+        
+        cout << "Olá, " << this->nome << endl;
+        cout << "Escolha uma opção" << endl;
+        cout << "0 - Sair" << endl;
+        cout << "1 - Verificar produtos cadastrados" << endl;
+        cout << "2 - Cadastrar produto" << endl;
+        cout << "3 - Remover produto" << endl;
+        cout << "4 - Alterar preco de algum produto" << endl;
+        cin >> opcao;
+        return opcao;
+}
 
+int Funcionario::MenuVendedor(){
+        
+        cout << "Olá, " << this->nome << endl;
+        cout << "Escolha uma opção" << endl;
+        cout << "0 - Sair" << endl;
+        cout << "1 - Cadastrar uma venda" << endl;
+        cout << "2 - Adicionar estoque" << endl;
+        cin >> opcao;
+        return opcao;
+}
+
+int Funcionario::MenuAdm(){
+
+        cout << "Olá, administrador" << endl;
+        cout << "Escolha uma opção" << endl;
+        cout << "0 - Sair"<<endl;
+        cout << "1 - Verificar funcionarios cadastrados" << endl;
+        cout << "2 - Cadastrar funcionario" << endl;
+        cout << "3 - Remover funcionario" << endl;
+        cin >> opcao;
+        return opcao;
+}
+
+int Gerente::MostraProdutos(){
+    
+    system("clear");
     int contador = 1;
-    string nome_do_produto, preco_do_produto;
+    string nome_do_produto, preco_do_produto, estoque_do_produto;
 
     ifstream base_produtos;
     base_produtos.open("base_produtos.csv");
@@ -94,8 +145,9 @@ int Gerente::MostraProdutos(){
         if (nome_do_produto == ""){
             break;
         }
-        getline(base_produtos, preco_do_produto, '\n');
-        cout << "Nome do produto: " << nome_do_produto << " Preco: R$" << preco_do_produto << " Codigo: " << contador << endl;
+        getline(base_produtos, preco_do_produto, ',');
+        getline(base_produtos, estoque_do_produto, '\n');
+        cout << "Nome do produto: " << nome_do_produto << " | Preco: R$" << preco_do_produto << " | Codigo: " << contador << endl;
         contador++;
     } 
 
@@ -106,7 +158,8 @@ int Gerente::MostraProdutos(){
 }
 
 int Gerente::InsereProduto(){
-
+    
+    system("clear");
     string nome_do_produto, preco_do_produto, campo1, campo2;
     ofstream base_produtos;
     ifstream arq1;
@@ -124,7 +177,7 @@ int Gerente::InsereProduto(){
         if (campo1 == "Produto removido"){
 
                 possui_produto_removido = true;
-                base_produtos.close();
+                arq1.close();
                 break;
         }
         getline(arq1, campo2, '\n');
@@ -142,7 +195,7 @@ int Gerente::InsereProduto(){
             getline(arq1, campo2, '\n');
             if (campo1 == "Produto removido"){
                     
-                base_produtos << nome_do_produto << "," << preco_do_produto << endl;
+                base_produtos << nome_do_produto << "," << preco_do_produto << ",0" << endl;
                 break;
             }
             base_produtos << campo1 << "," << campo2 << endl;
@@ -166,9 +219,10 @@ int Gerente::InsereProduto(){
     else{
             
         base_produtos.open("base_produtos.csv", ios_base::app);
-        base_produtos << nome_do_produto << "," << preco_do_produto << endl;
+        base_produtos << nome_do_produto << "," << preco_do_produto << ",0" << endl;
         base_produtos.close();
     }
+    cout<< nome_do_produto << " adicionado com sucesso" << endl;
             
     return 0;
 }
@@ -193,7 +247,7 @@ int Gerente::RemoveProduto(){
     }
 
     getline(arq1, linha, '\n' );
-    arq2 << "Produto removido,0.00" << endl;
+    arq2 << "Produto removido,0.00,0" << endl;
     
     while (!arq1.eof()){
 
@@ -205,6 +259,7 @@ int Gerente::RemoveProduto(){
     }
     remove("base_produtos.csv");
     rename("novo.csv", "base_produtos.csv");
+    system("clear");
     cout << "Produto removido com sucesso" << endl;
 
     return 0;
@@ -213,7 +268,7 @@ int Gerente::RemoveProduto(){
 int Gerente::AlteraPreco(){
 
     int codigo;
-    string linha, preco_novo, campo1, campo2;
+    string linha, preco_novo, campo1, campo2, campo3;
 
     cout << "Digite o código do produto que terá o preco alterado: ";
     cin >> codigo;
@@ -232,8 +287,9 @@ int Gerente::AlteraPreco(){
     }
 
     getline(arq1, campo1, ',' );
-    getline(arq1, campo2, '\n' ); 
-    arq2 << campo1 << "," << preco_novo << endl;
+    getline(arq1, campo2, ',' ); 
+    getline(arq1, campo3, '\n');
+    arq2 << campo1 << "," << preco_novo << "," << campo3 << endl;
     
     while (!arq1.eof()){
 
@@ -245,15 +301,16 @@ int Gerente::AlteraPreco(){
     }
     remove("base_produtos.csv");
     rename("novo.csv", "base_produtos.csv");
+    system("clear");
     cout << "Preco modificado com sucesso" << endl;
 
     return 0;
 }
 
 int Vendedor::VendeProduto(){
-
-    int contador = 1, quantidade_entrada, codigo_entrada;
-    string nome_do_produto, preco_do_produto, linha;
+    system("clear");
+    int quantidade_entrada, codigo_entrada, contador = 1;
+    string nome_do_produto, preco_do_produto, estoque_atual, linha, campo1, campo2, campo3;
     float preco_total;
 
     ifstream base_produtos;
@@ -265,8 +322,9 @@ int Vendedor::VendeProduto(){
 
             break;
         }
-        getline(base_produtos, preco_do_produto, '\n');
-        cout << "Nome do produto: " << nome_do_produto << " Preco: R$" << preco_do_produto << " Codigo: " << contador << endl;
+        getline(base_produtos, preco_do_produto, ',');
+        getline(base_produtos, estoque_atual, '\n');
+        cout << "Nome do produto: " << nome_do_produto << " | Preco: R$" << preco_do_produto << " | Quantidade disponível: " << estoque_atual << " | Codigo: " << contador << endl;
         contador++;
     } 
 
@@ -285,17 +343,124 @@ int Vendedor::VendeProduto(){
     }
 
     getline(base_produtos, nome_do_produto, ',');
-    getline(base_produtos, preco_do_produto, '\n');
+    getline(base_produtos, preco_do_produto, ',');
+    getline(base_produtos, estoque_atual, '\n');
 
-    preco_total = (stof(preco_do_produto) * quantidade_entrada);
+    base_produtos.close();
 
-    cout << fixed << setprecision(2) << "O total deu: R$" << preco_total << endl;
+    if (quantidade_entrada > stoi(estoque_atual) || quantidade_entrada < 0){
+        cout << "Quantia inválida" << endl;
+    }
+    else{
+
+        ifstream arq1;
+        ofstream arq2;
+        arq1.open("base_produtos.csv");
+        arq2.open("novo.csv");
+
+        for (int i = 1; i < codigo_entrada; i++){
+
+            getline(arq1, linha, '\n' );
+            arq2 << linha << endl;
+        }
+
+        getline(arq1, campo1, ',' );
+        getline(arq1, campo2, ',' ); 
+        getline(arq1, campo3, '\n');
+        arq2 << campo1 << "," << campo2 << "," << to_string(stoi(campo3) - quantidade_entrada) << endl;
+        
+        while (!arq1.eof()){
+
+            getline(arq1, linha, '\n' );
+            if (linha == ""){
+                break;
+            }
+            arq2 << linha << endl;
+        }
+        remove("base_produtos.csv");
+        rename("novo.csv", "base_produtos.csv");
+
+        preco_total = (stof(preco_do_produto) * quantidade_entrada);
+        system("clear");
+        cout << fixed << setprecision(2) << "O total deu: R$" << preco_total << endl;
+
+    }
+
 
     return 0;
 }
 
+int Vendedor::AdicionaEstoque(){
+
+    system("clear");
+    int codigo, contador = 1;
+    string linha, novo_estoque, campo1, campo2, campo3, nome_do_produto, preco_do_produto, estoque_do_produto;
+
+    ifstream base_produtos;
+    base_produtos.open("base_produtos.csv");
+
+    while(getline(base_produtos, nome_do_produto, ',')){
+
+        if (nome_do_produto == ""){
+            break;
+        }
+        getline(base_produtos, preco_do_produto, ',');
+        getline(base_produtos, estoque_do_produto, '\n');
+        cout << "Nome do produto: " << nome_do_produto << " Codigo: " << contador << endl;
+        contador++;
+    } 
+
+    base_produtos.close();
+
+    cout << "Digite o código do produto que terá o estoque incrementado: ";
+    cin >> codigo;
+    cout << "Digite a quantidade a ser adicionada: ";
+    cin >> novo_estoque;
+
+    if(stoi(novo_estoque) < 0){
+        system("clear");
+        cout << "Valor inválido..." << endl;
+        return 0;
+    }
+    else{
+
+        ifstream arq1;
+        ofstream arq2;
+        arq1.open("base_produtos.csv");
+        arq2.open("novo.csv");
+
+        for (int i = 1; i < codigo; i++){
+
+            getline(arq1, linha, '\n' );
+            arq2 << linha << endl;
+        }
+
+        getline(arq1, campo1, ',' );
+        getline(arq1, campo2, ',' ); 
+        getline(arq1, campo3, '\n');
+        arq2 << campo1 << "," << campo2 << "," << to_string(stoi(campo3) + stoi(novo_estoque)) << endl;
+        
+        while (!arq1.eof()){
+
+            getline(arq1, linha, '\n' );
+            if (linha == ""){
+                break;
+            }
+            arq2 << linha << endl;
+        }
+        remove("base_produtos.csv");
+        rename("novo.csv", "base_produtos.csv");
+        system("clear");
+        cout << "Estoque adicionado com sucesso" << endl;
+
+        return 0;
+    }
+
+}
+
 int Administrador::ExibeFuncionarios(){
 
+    system("clear");
     string campo1, campo2, campo3;
 
     ifstream base_funcionarios;

@@ -8,14 +8,17 @@ class Funcionario{
 private:
     static string nome_adm;
     static string senha_adm;
+    int opcao;
 
 protected:
-    string funcao;
     string nome;
     string senha;
     
 public:
     int Login();
+    int MenuGerente();
+    int MenuVendedor();
+    int MenuAdm();
 };
 
 class Gerente: private Funcionario{
@@ -31,6 +34,7 @@ class Vendedor: private Funcionario{
 
 public:
     int VendeProduto();
+    int AdicionaEstoque();
 };
 
 class Administrador{
